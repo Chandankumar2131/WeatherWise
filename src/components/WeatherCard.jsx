@@ -10,6 +10,7 @@ export default function WeatherCard() {
   const [city, setCity] = useState("");
   const [apiData, setApidata] = useState({});
   const [darkMode, setDarkMode] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(null); // <-- new
 
   const fetchApi = async (cityName = city) => {
     const searchCity = cityName || city;
@@ -32,7 +33,9 @@ export default function WeatherCard() {
         windSpeed: fdata.wind.speed,
         icon: fdata.weather[0].icon,
         description: fdata.weather[0].description,
+        timezone: fdata.timezone, // <-- added
       });
+      setLastUpdated(new Date()); // <-- added
     } catch (error) {
       console.log(error);
       toast.error("Something went wrong. Please try again later.");
@@ -42,6 +45,15 @@ export default function WeatherCard() {
   useEffect(() => {
     fetchApi("Delhi");
   }, []);
+
+  // compute city local time if timezone exists
+  const getCityLocalTime = () => {
+    if (apiData.timezone == null) return null;
+    // OpenWeather gives timezone offset in seconds from UTC
+    const utcMs = Date.now();
+    const cityMs = utcMs + apiData.timezone * 1000;
+    return new Date(cityMs);
+  };
 
   return (
     <div
@@ -114,6 +126,26 @@ export default function WeatherCard() {
           {apiData.name}
         </h2>
       </div>
+
+      {/* New: Local Time & Last Updated */}
+      {apiData.name && (
+        <div className="text-center mb-6 space-y-1">
+          {getCityLocalTime() && (
+            <div className="text-sm sm:text-base text-blue-200">
+              Local Time:{" "}
+              {getCityLocalTime().toLocaleString("en-IN", {
+                timeStyle: "short",
+                dateStyle: "medium",
+              })}
+            </div>
+          )}
+          {lastUpdated && (
+            <div className="text-xs sm:text-sm text-gray-200/80">
+              Last Updated: {lastUpdated.toLocaleTimeString("en-IN")}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Humidity & Wind */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full max-w-xl px-4 sm:px-6">
